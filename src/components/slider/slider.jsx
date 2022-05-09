@@ -1,37 +1,93 @@
 import cn from "./slider.module.scss";
 import PropTypes from "prop-types";
 import classNames from "classnames";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Children, cloneElement } from "react";
 
 export default function Slider({ config, children }) {
+  const [intervalId, setIntervalId] = useState(null);
+  const [remainingBlockCount, setRemainingBlockCount] = useState(
+    children.length - config.blockCount
+  );
+  const [block, setBlock] = useState([]);
   const [sliderPosition, setSliderPosition] = useState(0);
   const sliderInnerRef = useRef(null);
 
   useEffect(() => {
-    setInterval(goRight,2000)
-      return () => {
-          clearInterval()
-      }
+    setBlock(
+      Children.map(children, (child) => {
+        return cloneElement(child, {
+          config,
+          sliderInnerRef,
+        });
+      })
+    );
+    let carouselDirection = null;
+    if (config.direction === "left") {
+      carouselDirection = carouselStartLeft;
+    } else {
+      carouselDirection = carouselStartRight;
+    }
+    // let id = setInterval(carouselDirection, config.loopTimer);
+    // setIntervalId(id);
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
 
-   
-
-
-  const goRight = () => {
+  const carouselStartRight = () => {
     setSliderPosition((prev) => {
-        let newPosition = 0
-        if(prev - sliderInnerRef.current.offsetWidth >= -((children.length-1) * sliderInnerRef.current.offsetWidth)){
-            newPosition = prev - sliderInnerRef.current.offsetWidth
+      let newPosition = 0;
+      if (
+        prev - sliderInnerRef.current.offsetWidth >=
+        -(
+          (Math.ceil(children.length / config.blockCount) - 1) *
+          sliderInnerRef.current.offsetWidth
+        )
+      ) {
+        if (remainingBlockCount <= config.blockCount) {
+          newPosition =
+            prev -
+            (sliderInnerRef.current.offsetWidth / config.blockCount) *
+              remainingBlockCount;
+          setRemainingBlockCount(children.length - config.blockCount);
+        } else {
+          newPosition = prev - sliderInnerRef.current.offsetWidth;
+          setRemainingBlockCount((prev) => prev - config.blockCount);
         }
+      }
       return newPosition;
     });
   };
 
-  const goLeft = () => {
+  const carouselStartLeft = () => {
     setSliderPosition((prev) => {
-        let newPosition = Math.min(prev + sliderInnerRef.current.offsetWidth,0) ;  
-        return newPosition;
-      });
+      let newPosition = 0;
+      if (prev === 0) {
+        newPosition = -(
+          (Math.ceil(children.length / config.blockCount) - 1) *
+          sliderInnerRef.current.offsetWidth
+        );
+        if (children.length % config.blockCount !== 0) {
+          newPosition +=  Math.ceil(sliderInnerRef.current.offsetWidth / config.blockCount) *
+              (config.blockCount - (children.length % config.blockCount));
+        }
+      } else {
+        if (-prev < sliderInnerRef.current.offsetWidth) {
+          newPosition = 0;
+        } else newPosition = prev + sliderInnerRef.current.offsetWidth;
+      }
+      return newPosition;
+    });
+  };
+
+  const goRight = () => {
+    clearInterval(intervalId);
+    carouselStartRight();
+  };
+
+  const goLeft = () => {
+    clearInterval(intervalId);
+    carouselStartLeft();
   };
 
   return (
@@ -45,7 +101,7 @@ export default function Slider({ config, children }) {
           }}
           className={cn.sliderInner}
         >
-          {children}
+          {block}
         </div>
       </div>
 
@@ -67,7 +123,7 @@ Slider.defaultProps = {
     blockCount: 1,
     navigation: false,
     pagination: false,
-    loopTimer: 1000,
+    loopTimer: 2000,
     position: "start",
     direction: "left",
     paginationClickable: false,
