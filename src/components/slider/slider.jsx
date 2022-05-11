@@ -1,13 +1,11 @@
 import cn from "./slider.module.scss";
 import PropTypes from "prop-types";
 import classNames from "classnames";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useState, useEffect, useRef, Children, cloneElement } from "react";
 
 export default function Slider({ config, children }) {
   const [intervalId, setIntervalId] = useState(null);
-  const [remainingBlockCount, setRemainingBlockCount] = useState(
-    children.length - config.blockCount
-  );
   const [block, setBlock] = useState([]);
   const [sliderPosition, setSliderPosition] = useState(0);
   const sliderInnerRef = useRef(null);
@@ -21,18 +19,19 @@ export default function Slider({ config, children }) {
         });
       })
     );
+    clearInterval(intervalId);
     let carouselDirection = null;
     if (config.direction === "left") {
       carouselDirection = carouselStartLeft;
     } else {
       carouselDirection = carouselStartRight;
     }
-    // let id = setInterval(carouselDirection, config.loopTimer);
-    // setIntervalId(id);
+    let id = setInterval(carouselDirection, config.loopTimer);
+    setIntervalId(id);
     return () => {
       clearInterval(intervalId);
     };
-  }, []);
+  }, [config]);
 
   const carouselStartRight = () => {
     setSliderPosition((prev) => {
@@ -44,16 +43,17 @@ export default function Slider({ config, children }) {
           sliderInnerRef.current.offsetWidth
         )
       ) {
-        if (remainingBlockCount <= config.blockCount) {
+        if (
+          children.length % config.blockCount !== 0 &&
+          prev - sliderInnerRef.current.offsetWidth ===
+            -(Math.ceil(children.length / config.blockCount) - 1) *
+              sliderInnerRef.current.offsetWidth
+        ) {
           newPosition =
             prev -
-            (sliderInnerRef.current.offsetWidth / config.blockCount) *
-              remainingBlockCount;
-          setRemainingBlockCount(children.length - config.blockCount);
-        } else {
-          newPosition = prev - sliderInnerRef.current.offsetWidth;
-          setRemainingBlockCount((prev) => prev - config.blockCount);
-        }
+            Math.ceil(sliderInnerRef.current.offsetWidth / config.blockCount) *
+              (children.length % config.blockCount);
+        } else newPosition = prev - sliderInnerRef.current.offsetWidth;
       }
       return newPosition;
     });
@@ -68,8 +68,9 @@ export default function Slider({ config, children }) {
           sliderInnerRef.current.offsetWidth
         );
         if (children.length % config.blockCount !== 0) {
-          newPosition +=  Math.ceil(sliderInnerRef.current.offsetWidth / config.blockCount) *
-              (config.blockCount - (children.length % config.blockCount));
+          newPosition +=
+            Math.ceil(sliderInnerRef.current.offsetWidth / config.blockCount) *
+            (config.blockCount - (children.length % config.blockCount));
         }
       } else {
         if (-prev < sliderInnerRef.current.offsetWidth) {
@@ -92,7 +93,9 @@ export default function Slider({ config, children }) {
 
   return (
     <div className={cn.slider}>
-      <div className={cn.navigation} onClick={goLeft}></div>
+      <div className={classNames(cn.navigation,cn[config.navigationPosition])} onClick={goLeft}>
+        <FaChevronLeft />
+      </div>
       <div className={cn.window}>
         <div
           ref={sliderInnerRef}
@@ -104,11 +107,9 @@ export default function Slider({ config, children }) {
           {block}
         </div>
       </div>
-
-      <div
-        className={classNames(cn.navigation, cn.right)}
-        onClick={goRight}
-      ></div>
+      <div className={classNames(cn.navigation, cn.right,cn[config.navigationPosition])} onClick={goRight}>
+        <FaChevronRight />
+      </div>
     </div>
   );
 }

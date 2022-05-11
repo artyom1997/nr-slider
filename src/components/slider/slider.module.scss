@@ -23,22 +23,42 @@
     width: 100%;
     display: flex;
     align-items: center;
-    // justify-content: space-around;
-
+    transition: translate;
+    transition-property: transform;
+    transition-duration: 300ms;
+    transition-timing-function: ease-in-out;
 }
 
 
 .navigation {
-    width: 20px;
-    height: 20px;
-    background-color: yellow;
+    width: 50px;
+    height: 45px;
     position: absolute;
     top: 50%;
-    left: 10px;
+    left: 0;
     transform: translateY(-50%);
+    z-index: 1;
 
     &.right {
         left: unset;
-        right: 10px;
+        right: 0;
+    }
+    &.center {
+        left: 33%;
+        &.right {
+            left: unset;
+            right: 33%;
+        }
+    }
+
+
+
+    // &.center.right {
+    //     right: 33%;
+    // }
+
+    & svg {
+        font-size: 45px;
+        color: #A8ADAD;
     }
 }

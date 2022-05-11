@@ -4,13 +4,13 @@ import Slider from "./components/slider/slider";
 
 const config = {
   autoplay: true,
-  blockCount: 1,
+  blockCount: 3,
   navigation: true,
   navigationPosition: "space-between",
   pagination: true,
   loopTimer: 2000,
   position: "start",
-  direction: "right",
+  direction: "left",
   paginationClickable: true,
 };
 
