@@ -1,14 +1,106 @@
 import cn from "./slider.module.scss";
 import PropTypes from "prop-types";
-import classNames from "classnames";
+import createRightMovementType from "../../helpers/createRightMovementType";
+import createLeftMovementType from "../../helpers/createLeftMovementType";
+import positionMovement from "../../helpers/positionMovement";
+import createMovementArgs from "../../helpers/movementArgs";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { useState, useEffect, useRef, Children, cloneElement } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  Children,
+  cloneElement,
+} from "react";
 
 export default function Slider({ config, children }) {
+  const [sliderPosition, setSliderPosition] = useState(0);
   const [intervalId, setIntervalId] = useState(null);
   const [block, setBlock] = useState([]);
-  const [sliderPosition, setSliderPosition] = useState(0);
   const sliderInnerRef = useRef(null);
+
+  const goRight = () => {
+    setSliderPosition((prev) => {
+      const type = createRightMovementType(
+        sliderInnerRef.current.offsetWidth,
+        config.blockCount,
+        children.length,
+        prev,
+        config.position
+      );
+      return positionMovement({
+        prev,
+        ...new createMovementArgs(
+          config.position,
+          sliderInnerRef.current.offsetWidth,
+          type,
+          config.blockCount,
+          children.length,
+          "right"
+        ),
+      });
+    });
+    clearInterval(intervalId);
+  };
+
+  const goLeft = () => {
+    setSliderPosition((prev) => {
+      const type = createLeftMovementType(
+        sliderInnerRef.current.offsetWidth,
+        config.blockCount,
+        children.length,
+        prev,
+        config.position
+      );
+      return positionMovement({
+        prev,
+        ...new createMovementArgs(
+          config.position,
+          sliderInnerRef.current.offsetWidth,
+          type,
+          config.blockCount,
+          children.length,
+          "left"
+        ),
+      });
+    });
+    clearInterval(intervalId);
+  };
+
+  const navLeftStyles = useMemo(() => {
+    if (sliderInnerRef?.current?.offsetWidth) {
+      if (config.navigationPosition === "center") {
+        return {
+          left: `${
+            (sliderInnerRef.current.offsetWidth / config.blockCount) *
+            ((config.blockCount - 1) / 2)
+          }px`,
+        };
+      } else {
+        return {
+          left: 0,
+        };
+      }
+    }
+  }, [sliderInnerRef.current, config]);
+
+  const navRightStyles = useMemo(() => {
+    if (sliderInnerRef?.current?.offsetWidth) {
+      if (config.navigationPosition === "center") {
+        return {
+          right: `${
+            (sliderInnerRef.current.offsetWidth / config.blockCount) *
+            ((config.blockCount - 1) / 2)
+          }px`,
+        };
+      } else {
+        return {
+          right: 0,
+        };
+      }
+    }
+  }, [sliderInnerRef.current, config]);
 
   useEffect(() => {
     setBlock(
@@ -19,81 +111,45 @@ export default function Slider({ config, children }) {
         });
       })
     );
-    clearInterval(intervalId);
-    let carouselDirection = null;
-    if (config.direction === "left") {
-      carouselDirection = carouselStartLeft;
-    } else {
-      carouselDirection = carouselStartRight;
+  }, [config,children]);
+
+  useEffect(() => {
+    setSliderPosition((prev) =>
+      positionMovement({
+        prev,
+        ...new createMovementArgs(
+          config.position,
+          sliderInnerRef.current.offsetWidth,
+          "start",
+          config.blockCount,
+          children.length,
+          config.direction
+        ),
+      })
+    );
+  }, [config,children]);
+
+  useEffect(() => {
+    if (config.autoplay) {
+      const autoplayDiraction = {
+        right: goRight,
+        left: goLeft,
+      };
+      const id = setInterval(
+        autoplayDiraction[config.direction],
+        config.loopTimer
+      );
+      setIntervalId(id);
     }
-    let id = setInterval(carouselDirection, config.loopTimer);
-    setIntervalId(id);
+
     return () => {
       clearInterval(intervalId);
     };
   }, [config]);
 
-  const carouselStartRight = () => {
-    setSliderPosition((prev) => {
-      let newPosition = 0;
-      if (
-        prev - sliderInnerRef.current.offsetWidth >=
-        -(
-          (Math.ceil(children.length / config.blockCount) - 1) *
-          sliderInnerRef.current.offsetWidth
-        )
-      ) {
-        if (
-          children.length % config.blockCount !== 0 &&
-          prev - sliderInnerRef.current.offsetWidth ===
-            -(Math.ceil(children.length / config.blockCount) - 1) *
-              sliderInnerRef.current.offsetWidth
-        ) {
-          newPosition =
-            prev -
-            Math.ceil(sliderInnerRef.current.offsetWidth / config.blockCount) *
-              (children.length % config.blockCount);
-        } else newPosition = prev - sliderInnerRef.current.offsetWidth;
-      }
-      return newPosition;
-    });
-  };
-
-  const carouselStartLeft = () => {
-    setSliderPosition((prev) => {
-      let newPosition = 0;
-      if (prev === 0) {
-        newPosition = -(
-          (Math.ceil(children.length / config.blockCount) - 1) *
-          sliderInnerRef.current.offsetWidth
-        );
-        if (children.length % config.blockCount !== 0) {
-          newPosition +=
-            Math.ceil(sliderInnerRef.current.offsetWidth / config.blockCount) *
-            (config.blockCount - (children.length % config.blockCount));
-        }
-      } else {
-        if (-prev < sliderInnerRef.current.offsetWidth) {
-          newPosition = 0;
-        } else newPosition = prev + sliderInnerRef.current.offsetWidth;
-      }
-      return newPosition;
-    });
-  };
-
-  const goRight = () => {
-    clearInterval(intervalId);
-    carouselStartRight();
-  };
-
-  const goLeft = () => {
-    clearInterval(intervalId);
-    carouselStartLeft();
-  };
-
   return (
     <div className={cn.slider}>
-      <div className={classNames(cn.navigation,cn[config.navigationPosition])} onClick={goLeft}>
+      <div style={navLeftStyles} className={cn.navigation} onClick={goLeft}>
         <FaChevronLeft />
       </div>
       <div className={cn.window}>
@@ -107,7 +163,7 @@ export default function Slider({ config, children }) {
           {block}
         </div>
       </div>
-      <div className={classNames(cn.navigation, cn.right,cn[config.navigationPosition])} onClick={goRight}>
+      <div style={navRightStyles} className={cn.navigation} onClick={goRight}>
         <FaChevronRight />
       </div>
     </div>
@@ -123,6 +179,7 @@ Slider.defaultProps = {
     autoplay: true,
     blockCount: 1,
     navigation: false,
+    navigationPosition: "space-between",
     pagination: false,
     loopTimer: 2000,
     position: "start",

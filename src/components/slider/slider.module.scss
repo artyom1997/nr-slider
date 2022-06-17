@@ -5,7 +5,6 @@
     min-height: 200px;
     display: flex;
     align-items: center;
-    // background-color: red;
     position: relative;
 }
 
@@ -35,27 +34,8 @@
     height: 45px;
     position: absolute;
     top: 50%;
-    left: 0;
     transform: translateY(-50%);
     z-index: 1;
-
-    &.right {
-        left: unset;
-        right: 0;
-    }
-    &.center {
-        left: 33%;
-        &.right {
-            left: unset;
-            right: 33%;
-        }
-    }
-
-
-
-    // &.center.right {
-    //     right: 33%;
-    // }
 
     & svg {
         font-size: 45px;

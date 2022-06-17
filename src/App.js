@@ -9,7 +9,7 @@ const config = {
   navigationPosition: "space-between",
   pagination: true,
   loopTimer: 2000,
-  position: "start",
+  position: "center",
   direction: "left",
   paginationClickable: true,
 };
